@@ -240,4 +240,4 @@ You can extend the functionality of this project by creating your own TaskFlow c
 
 ## Notes
 
-1. There may be inefficiencies in the dags or inaccuracies in the amount of tasks that actually get generated (usually more than specified). This is a simulation tool and not meant to be generating optimized DAGs. Use this to get an idea for the Composer environment size that can handle your maximum intended workload.
+1. There may be inefficiencies in the dags (duplicate imports) or inaccuracies in the amount of tasks that actually get generated (usually more than specified). This is a simulation tool and not meant to be generating optimized DAGs. Use this to get an idea for the Composer environment size that can handle your maximum intended workload.

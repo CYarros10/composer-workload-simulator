@@ -225,7 +225,7 @@ You can extend the functionality of this project by creating your own TaskFlow c
 
         def my_custom_operator_taskflow(self, task_id: str):
             return f"""
-            task_{task_id} = MyCustomOperator( # at least one task id must be the task_{task_id} to ensure the final DAG structure stays intact.
+            task_{task_id} = MyCustomOperator( # at least one task id must be `task_{task_id}` to ensure the final DAG structure stays intact.
                 task_id="my_custom_task_{task_id}",
                 my_param=self.my_param,
             )

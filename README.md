@@ -85,7 +85,7 @@ default_settings:
   poke_interval: 120 
 ```
 
-## Generated Output (`dags/`)
+## Example Generated Output
 
 Here is one generated DAG based on the above config file:
 

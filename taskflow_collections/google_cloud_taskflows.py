@@ -22,7 +22,6 @@ class GoogleCloudTaskFlows(BaseTaskFlows):
         """generate string fo default imports"""
 
         imports = f"""
-
 # -------------------------------------------------
 # Google Cloud Taskflow Imports 
 # -------------------------------------------------
@@ -66,7 +65,6 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
     def bigqueryinsertjoboperator_taskflow(self, task_id: str):
         """Generates Taskflow for BigQueryInsertJobOperator."""
         return f"""
-
     # -------------------------------------------------
     # Default BigQueryInsertJobOperator Taskflow 
     # -------------------------------------------------
@@ -89,7 +87,6 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
     ):
         """Generates Taskflow for DataprocSubmitJobOperator."""
         return f"""
-
     # -------------------------------------------------
     # Default DataprocSubmitJobOperator Taskflow 
     # -------------------------------------------------
@@ -135,7 +132,6 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
     def beamrunjavapipelineoperator_taskflow(self, task_id: str):
         """Generates Taskflow for BeamRunJavaPipelineOperator."""
         return f"""
-
     # -------------------------------------------------
     # Default BeamRunJavaPipelineOperator Taskflow 
     # -------------------------------------------------
@@ -177,7 +173,6 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
     ):
         """Generates Taskflow for DataprocCreateBatchOperator."""
         return f"""
-
     # -------------------------------------------------
     # Default DataprocBatchOperator Taskflow 
     # -------------------------------------------------    
@@ -202,18 +197,14 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
     def gcstogcsoperator_taskflow(self, task_id: str):
         """Generates Taskflow for GCSToGCSOperator."""
         return f"""
-
     # -------------------------------------------------
     # Default GCSToGCSOperator Taskflow
     # -------------------------------------------------   
 
-    source_bucket = "{self.dag_id}-{task_id}-gcstogcs-src".replace('_','-')
+    source_bucket="cloud-samples-data",
     destination_bucket = "{self.dag_id}-{task_id}-gcstogcs-dst".replace('_','-')
 
-    create_source_bucket_{task_id} = GCSCreateBucketOperator(
-        task_id="create_source_bucket_{task_id}",
-        bucket_name=source_bucket,
-    )
+    source_object = "bigquery/us-states/us-states.csv"
 
     create_destination_bucket_{task_id} = GCSCreateBucketOperator(
         task_id="create_destination_bucket_{task_id}",
@@ -223,14 +214,10 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
     task_{task_id} = GCSToGCSOperator(
         task_id="gcs_to_gcs_{task_id}",
         source_bucket=source_bucket,
+        source_object=source_object,
         destination_bucket=destination_bucket,
-        move_object=True,
-    )
-
-    delete_source_bucket_{task_id} = GCSDeleteBucketOperator(
-        task_id="delete_source_bucket_{task_id}",
-        bucket_name=source_bucket,
-        trigger_rule="all_done",
+        destination_object="backup_" + source_object,
+        move_object=False,
     )
 
     delete_destination_bucket_{task_id} = GCSDeleteBucketOperator(
@@ -239,13 +226,12 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
         trigger_rule="all_done",
     )
 
-    create_source_bucket_{task_id} >> create_destination_bucket_{task_id} >> task_{task_id} >> delete_source_bucket_{task_id} >> delete_destination_bucket_{task_id}
+    create_destination_bucket_{task_id} >> task_{task_id} >> delete_destination_bucket_{task_id}
     """
 
     def gcstobigqueryoperator_taskflow(self, task_id: str):
         """Generates Taskflow for GCSToBigQueryOperator."""
         return f"""
-
     # -------------------------------------------------
     # Default GCSToBigQueryOperator Taskflow
     # -------------------------------------------------           
@@ -284,7 +270,6 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
     ):
         """Generates Taskflow for GKEStartPodOperator."""
         return f"""
-
     # -------------------------------------------------
     # Default GKEStartPodOperator Taskflow
     # -------------------------------------------------  

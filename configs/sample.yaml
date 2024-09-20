@@ -1,6 +1,6 @@
 experiment_id: experiment_1
 number_of_dags: 10
-tasks_per_dag: 3
+min_tasks_per_dag: 3
 
 # Schedules and weights
 schedules:

@@ -179,7 +179,7 @@ def main():
             default_settings=default_settings,
             taskflow_collections=taskflow_collections,
             taskflows=taskflows,
-            num_tasks=load_config["tasks_per_dag"],
+            num_tasks=load_config["min_tasks_per_dag"],
         )
 
         Path(f"dags/{experiment_id}").mkdir(parents=True, exist_ok=True)

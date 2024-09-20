@@ -22,10 +22,17 @@ This project provides a framework for dynamically generating Apache Airflow DAGs
 ## Getting Started
 
 * **Configuration:** 
-    * Modify the `configs/sample.yaml` file to adjust the desired parameters for DAG generation. See the example below for available options.
-* **Running the DAGs:** 
+    * Create a config or modify the `configs/sample.yaml` file to adjust the desired parameters for DAG generation. See the example below for available options.
+* **Generating the Airflow DAGs:** 
     * Execute `python main.py` to generate the DAG files in the `dags` folder.
-    * Monitor the DAGs in the Airflow UI
+    ```bash
+    python3 main.py --config-file=configs/sample.yaml
+    ```
+    * Optionally, add an `output-dir` arg to generate the DAG files in a specified folder.
+
+    ```bash
+    python3 main.py --config-file=configs/sample.yaml --output-dir=my-directory
+    ```
 
 ## Example Configuration (`configs/sample.yaml`)
 

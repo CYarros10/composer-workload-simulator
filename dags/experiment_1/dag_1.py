@@ -14,7 +14,6 @@ from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import Kubernete
 from airflow.operators.bash import BashOperator
 from airflow.operators.empty import EmptyOperator
 
-
 # -------------------------------------------------
 # Google Cloud Taskflow Imports 
 # -------------------------------------------------
@@ -61,7 +60,7 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
 with DAG(
     dag_id="experiment_1_dag_1",
     description="This DAG was auto-generated for experimentation purposes.",
-    schedule="20 * * * *",
+    schedule="30 * * * *",
     default_args={
         "retries": 1,
         "execution_timeout": timedelta(minutes=30),
@@ -75,7 +74,6 @@ with DAG(
 ) as dag:
 
 
-
     # -------------------------------------------------
     # Default PythonOperator Taskflow 
     # -------------------------------------------------
@@ -85,23 +83,39 @@ with DAG(
         python_callable=lambda: print(f"Hello World from DAG: experiment_1_dag_1, Task: 0"),
     )
     
-
     # -------------------------------------------------
-    # Default EmptyOperator Taskflow 
+    # Default PythonBranchOperator Taskflow 
     # -------------------------------------------------
 
-    task_1 = EmptyOperator(
-        task_id=f"empty_task_1",
+    def choose_branch(**kwargs):
+        execution_date = kwargs['execution_date']
+        if execution_date.day % 2 == 0:
+            return 'even_day_task_1'
+        else:
+            return 'odd_day_task_1'
+
+    # Define the BranchPythonOperator
+    task_1 = BranchPythonOperator(
+        task_id='branch_task_1',
+        python_callable=choose_branch,
+        provide_context=True,
     )
-    
 
+    # Define tasks for each branch
+    even_day_task_1  = EmptyOperator(task_id='even_day_task_1')
+    odd_day_task_1  = EmptyOperator(task_id='odd_day_task_1')
+
+    # Define task dependencies
+    task_1  >> even_day_task_1
+    task_1  >> odd_day_task_1
+    
     # -------------------------------------------------
-    # Default PythonOperator Taskflow 
+    # Default BashOperator Taskflow 
     # -------------------------------------------------
-        
-    task_2 = PythonOperator(
-        task_id="hello_world_2",
-        python_callable=lambda: print(f"Hello World from DAG: experiment_1_dag_1, Task: 2"),
+
+    task_2 = BashOperator(
+        task_id="bash_task_2",
+        bash_command="echo 'Hello from BashOperator'",
     )
     
     task_0 >> task_1 >> task_2

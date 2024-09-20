@@ -14,7 +14,6 @@ from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import Kubernete
 from airflow.operators.bash import BashOperator
 from airflow.operators.empty import EmptyOperator
 
-
 # -------------------------------------------------
 # Google Cloud Taskflow Imports 
 # -------------------------------------------------
@@ -61,7 +60,7 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
 with DAG(
     dag_id="experiment_1_dag_8",
     description="This DAG was auto-generated for experimentation purposes.",
-    schedule="20 * * * *",
+    schedule="@daily",
     default_args={
         "retries": 1,
         "execution_timeout": timedelta(minutes=30),
@@ -75,27 +74,23 @@ with DAG(
 ) as dag:
 
 
-
     # -------------------------------------------------
-    # Default BashOperator Taskflow 
+    # Default EmptyOperator Taskflow 
     # -------------------------------------------------
 
-    task_0 = BashOperator(
-        task_id="bash_task_0",
-        bash_command="echo 'Hello from BashOperator'",
+    task_0 = EmptyOperator(
+        task_id=f"empty_task_0",
     )
     
-
     # -------------------------------------------------
-    # Default BashOperator Taskflow 
+    # Default PythonOperator Taskflow 
     # -------------------------------------------------
-
-    task_1 = BashOperator(
-        task_id="bash_task_1",
-        bash_command="echo 'Hello from BashOperator'",
+        
+    task_1 = PythonOperator(
+        task_id="hello_world_1",
+        python_callable=lambda: print(f"Hello World from DAG: experiment_1_dag_8, Task: 1"),
     )
     
-
     # -------------------------------------------------
     # Default BashOperator Taskflow 
     # -------------------------------------------------

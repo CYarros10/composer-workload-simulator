@@ -14,7 +14,6 @@ from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import Kubernete
 from airflow.operators.bash import BashOperator
 from airflow.operators.empty import EmptyOperator
 
-
 # -------------------------------------------------
 # Google Cloud Taskflow Imports 
 # -------------------------------------------------
@@ -75,31 +74,35 @@ with DAG(
 ) as dag:
 
 
-
     # -------------------------------------------------
-    # Default KubernetesPodOperator Taskflow 
+    # Default BashOperator Taskflow 
     # -------------------------------------------------
 
-    task_0 = KubernetesPodOperator(
-        task_id="kubernetes_task_0",
-        name="pod-ex-minimum",
-        cmds=["echo"],
-        namespace="composer-user-workloads",
-        image="gcr.io/gcp-runtimes/ubuntu_20_0_4",
-        config_file="/home/airflow/composer_kube_config",
-        kubernetes_conn_id="kubernetes_default",
+    task_0 = BashOperator(
+        task_id="bash_task_0",
+        bash_command="echo 'Hello from BashOperator'",
     )
     
-
     # -------------------------------------------------
-    # Default EmptyOperator Taskflow 
-    # -------------------------------------------------
-
-    task_1 = EmptyOperator(
-        task_id=f"empty_task_1",
+    # Default DataprocBatchOperator Taskflow 
+    # -------------------------------------------------    
+    
+    batch_id = "experiment_1_dag_2-1-batch".replace("_", "-")
+    batch_config = {
+        "spark_batch": {
+            "jar_file_uris": ["file:///usr/lib/spark/examples/jars/spark-examples.jar"],
+            "main_class": "org.apache.spark.examples.SparkPi",
+        }
+    }
+    task_1 = DataprocCreateBatchOperator(
+        task_id="create_batch_1",
+        project_id='cy-artifacts',
+        region='us-central1',
+        batch_id=batch_id,
+        batch=batch_config,
     )
     
-
+    
     # -------------------------------------------------
     # Default EmptyOperator Taskflow 
     # -------------------------------------------------

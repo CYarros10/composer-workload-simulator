@@ -14,7 +14,6 @@ from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import Kubernete
 from airflow.operators.bash import BashOperator
 from airflow.operators.empty import EmptyOperator
 
-
 # -------------------------------------------------
 # Google Cloud Taskflow Imports 
 # -------------------------------------------------
@@ -75,23 +74,12 @@ with DAG(
 ) as dag:
 
 
-
-    # -------------------------------------------------
-    # Default BashOperator Taskflow 
-    # -------------------------------------------------
-
-    task_0 = BashOperator(
-        task_id="bash_task_0",
-        bash_command="echo 'Hello from BashOperator'",
-    )
-    
-
     # -------------------------------------------------
     # Default KubernetesPodOperator Taskflow 
     # -------------------------------------------------
 
-    task_1 = KubernetesPodOperator(
-        task_id="kubernetes_task_1",
+    task_0 = KubernetesPodOperator(
+        task_id="kubernetes_task_0",
         name="pod-ex-minimum",
         cmds=["echo"],
         namespace="composer-user-workloads",
@@ -100,19 +88,22 @@ with DAG(
         kubernetes_conn_id="kubernetes_default",
     )
     
-
     # -------------------------------------------------
-    # Default KubernetesPodOperator Taskflow 
+    # Default PythonOperator Taskflow 
     # -------------------------------------------------
-
-    task_2 = KubernetesPodOperator(
-        task_id="kubernetes_task_2",
-        name="pod-ex-minimum",
-        cmds=["echo"],
-        namespace="composer-user-workloads",
-        image="gcr.io/gcp-runtimes/ubuntu_20_0_4",
-        config_file="/home/airflow/composer_kube_config",
-        kubernetes_conn_id="kubernetes_default",
+        
+    task_1 = PythonOperator(
+        task_id="hello_world_1",
+        python_callable=lambda: print(f"Hello World from DAG: experiment_1_dag_4, Task: 1"),
+    )
+    
+    # -------------------------------------------------
+    # Default PythonOperator Taskflow 
+    # -------------------------------------------------
+        
+    task_2 = PythonOperator(
+        task_id="hello_world_2",
+        python_callable=lambda: print(f"Hello World from DAG: experiment_1_dag_4, Task: 2"),
     )
     
     task_0 >> task_1 >> task_2

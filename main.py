@@ -1,6 +1,8 @@
 import random
 import yaml
 from pathlib import Path
+import getopt
+import sys
 
 from taskflow_collections.base_taskflows import BaseTaskFlows
 from taskflow_collections.google_cloud_taskflows import GoogleCloudTaskFlows
@@ -18,6 +20,10 @@ def create_dag_string(
     """Generates a string representation of an Airflow DAG with random taskflows."""
 
     dag_string = ""
+
+    ################################################################################################
+    # Add Your Additional Task Flow Imports Below. 
+    ################################################################################################
 
     for taskflow_collection in taskflow_collections:
         if taskflow_collection == "base":
@@ -118,6 +124,10 @@ def generate_tasks(
         elif taskflow_name == "GKEStartPodOperator":
             tasks_string += google_cloud.gkestartpodoperator_taskflow(task_id=task_number)
 
+        ############################################################################################
+        # Add Your Additional Task Flows Below. 
+        ############################################################################################
+
         else:
             raise ValueError(f"Unsupported operator: {taskflow_name}")
 
@@ -137,14 +147,37 @@ def load_config_from_file(filepath):
     return load_config
 
 
-def main():
+def main(argv):
     """
     Reads configuration, generates DAGs, and writes them to files.
     """
+
+    config_file = ""
+    output_dir = ""
+
+    try:
+        opts, args = getopt.getopt(argv, "ho:v", ["help", "config-file=", "output-dir="])
+    except getopt.GetoptError:
+        print('main.py -c <configfile>')
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print('main.py -c <configfile>')
+            sys.exit()
+        elif opt in ("-c", "--config-file"):
+            config_file = arg
+            print('-- Using config file:', config_file)
+        elif opt in ("-o", "--output-dir"):
+            output_dir = arg
+            print('-- Generating output in:', output_dir)
+
+
     # Load configuration (assuming you have a function to load it)
     load_config = load_config_from_file(
-        "configs/sample.yaml"
+       config_file
     )  # Replace with your loading logic
+    num_dags = load_config["number_of_dags"]
+    min_tasks_per_dag = load_config["min_tasks_per_dag"]
 
     # merge taskflow collections into single map of taskflows and weights
     taskflows = {}
@@ -154,10 +187,9 @@ def main():
         nested_dict = load_config["taskflows"][key]
         taskflows.update(nested_dict)
     
-    print(taskflows)
 
     # Generate DAGs
-    for i in range(load_config["number_of_dags"]):
+    for i in range(num_dags):
         experiment_id = load_config["experiment_id"]
         dag_id = f"{experiment_id}_dag_{i}"
         schedule = random.choices(
@@ -179,16 +211,19 @@ def main():
             default_settings=default_settings,
             taskflow_collections=taskflow_collections,
             taskflows=taskflows,
-            num_tasks=load_config["min_tasks_per_dag"],
+            num_tasks=min_tasks_per_dag,
         )
 
-        Path(f"dags/{experiment_id}").mkdir(parents=True, exist_ok=True)
-
-        with open(f"dags/{experiment_id}/dag_{i}.py", "w") as file:
+        if not output_dir:
+            output_dir = "dags/"
+        
+        Path(f"{output_dir}/{experiment_id}").mkdir(parents=True, exist_ok=True)
+        with open(f"{output_dir}/{experiment_id}/dag_{i}.py", "w") as file:
             file.write(dag)
 
-    print("DONE.")
+    print(f"-- Generated {num_dags} dags with at least {min_tasks_per_dag} tasks per dag.")
+    print(f"-- Check dags/{experiment_id} directory for generated output.")
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

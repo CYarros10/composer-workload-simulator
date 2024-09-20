@@ -14,7 +14,6 @@ from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import Kubernete
 from airflow.operators.bash import BashOperator
 from airflow.operators.empty import EmptyOperator
 
-
 # -------------------------------------------------
 # Google Cloud Taskflow Imports 
 # -------------------------------------------------
@@ -61,7 +60,7 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
 with DAG(
     dag_id="experiment_1_dag_3",
     description="This DAG was auto-generated for experimentation purposes.",
-    schedule="30 * * * *",
+    schedule="10 * * * *",
     default_args={
         "retries": 1,
         "execution_timeout": timedelta(minutes=30),
@@ -75,17 +74,32 @@ with DAG(
 ) as dag:
 
 
+    # -------------------------------------------------
+    # Default PythonBranchOperator Taskflow 
+    # -------------------------------------------------
 
-    # -------------------------------------------------
-    # Default PythonOperator Taskflow 
-    # -------------------------------------------------
-        
-    task_0 = PythonOperator(
-        task_id="hello_world_0",
-        python_callable=lambda: print(f"Hello World from DAG: experiment_1_dag_3, Task: 0"),
+    def choose_branch(**kwargs):
+        execution_date = kwargs['execution_date']
+        if execution_date.day % 2 == 0:
+            return 'even_day_task_0'
+        else:
+            return 'odd_day_task_0'
+
+    # Define the BranchPythonOperator
+    task_0 = BranchPythonOperator(
+        task_id='branch_task_0',
+        python_callable=choose_branch,
+        provide_context=True,
     )
-    
 
+    # Define tasks for each branch
+    even_day_task_0  = EmptyOperator(task_id='even_day_task_0')
+    odd_day_task_0  = EmptyOperator(task_id='odd_day_task_0')
+
+    # Define task dependencies
+    task_0  >> even_day_task_0
+    task_0  >> odd_day_task_0
+    
     # -------------------------------------------------
     # Default BashOperator Taskflow 
     # -------------------------------------------------
@@ -95,14 +109,18 @@ with DAG(
         bash_command="echo 'Hello from BashOperator'",
     )
     
-
     # -------------------------------------------------
-    # Default BashOperator Taskflow 
+    # Default KubernetesPodOperator Taskflow 
     # -------------------------------------------------
 
-    task_2 = BashOperator(
-        task_id="bash_task_2",
-        bash_command="echo 'Hello from BashOperator'",
+    task_2 = KubernetesPodOperator(
+        task_id="kubernetes_task_2",
+        name="pod-ex-minimum",
+        cmds=["echo"],
+        namespace="composer-user-workloads",
+        image="gcr.io/gcp-runtimes/ubuntu_20_0_4",
+        config_file="/home/airflow/composer_kube_config",
+        kubernetes_conn_id="kubernetes_default",
     )
     
     task_0 >> task_1 >> task_2

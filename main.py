@@ -9,6 +9,7 @@ from taskflow_collections.google_cloud_taskflows import GoogleCloudTaskFlows
 
 
 def create_dag_string(
+    experiment_id: str,
     dag_id: str,
     start_date: str,
     schedule: str,
@@ -43,14 +44,16 @@ with DAG(
     schedule="{schedule}",
     default_args={{
         "retries": {default_settings['retries']},
+        "retry_delay": timedelta(minutes={default_settings['retry_delay']}),
         "execution_timeout": timedelta(minutes={default_settings['execution_timeout']}),
         "sla": timedelta(minutes={default_settings['sla']}),
         "deferrable": {default_settings['deferrable']},
     }},
     start_date=datetime.strptime("{start_date}", "%m/%d/%Y"),
     catchup={default_settings['catchup']},
+    dagrun_timeout=timedelta(minutes={default_settings['dagrun_timeout']}),
     is_paused_upon_creation={default_settings['is_paused_upon_creation']},
-    tags=['load_simulation']
+    tags=['load_simulation', '{experiment_id}']
 ) as dag:
 
 """
@@ -191,7 +194,7 @@ def main(argv):
     # Generate DAGs
     for i in range(num_dags):
         experiment_id = load_config["experiment_id"]
-        dag_id = f"{experiment_id}_dag_{i}"
+        dag_id = f"{experiment_id}_dag_{i}".replace('-','_')
         schedule = random.choices(
             list(load_config["schedules"].keys()),
             weights=list(load_config["schedules"].values()),
@@ -205,6 +208,7 @@ def main(argv):
 
 
         dag = create_dag_string(
+            experiment_id=experiment_id,
             dag_id=dag_id,
             start_date=start_date,
             schedule=schedule,

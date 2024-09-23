@@ -2,6 +2,27 @@
 
 This project provides a framework for dynamically generating Apache Airflow DAGs to simulate workloads and test data pipelines on Google Cloud Platform (GCP). 
 
+
+## How To Use
+
+Sizing a Composer Environment is an estimated process. There are many different Airflow components (scheduler, dag processor, web server, triggerer, database, workers) to consider. Workload is dependent on your use-cases and DAG complexity. Generally, the wait-and-see approach does not build trust during the service adoption phase.
+
+**This tool is designed to build trust in the ability for Composer to manage your specific workload (i.e. integration testing)** 
+
+1. Take Inventory of your DAGs. Total number of DAGs, types of operators, schedules. Max concurrent dag runs and max concurrent tasks.
+2. Use this inventory as a starting point for your Composer Environment size.
+
+| Recommended preset | Total DAGs | Max concurrent DAG runs | Max concurrent tasks |
+|---|---|---|---|
+| Small | 50 | 15 | 18 |
+| Medium | 250 | 60 | 100 |
+| Large | 1000 | 250 | 400 |
+
+3. Use this tool to generate the number of dags that matches your expected workload.
+4. After deploying the generated workload to the Composer environment, use the environment Monitoring tab to determine which airflow components need to be modified.
+5. Once your generated workload has stabilized and cost optimized, take note of your final Environment Configuration.
+
+
 ## Project Structure
 
 ```bash
@@ -248,3 +269,30 @@ You can extend the functionality of this project by creating your own TaskFlow c
 ## Notes
 
 1. There may be inefficiencies in the dags (duplicate imports) or inaccuracies in the amount of tasks that actually get generated (usually more than specified). This is a simulation tool and not meant to be generating optimized DAGs. Use this to get an idea for the Composer environment size that can handle your maximum intended workload.
+
+
+2. Calculating Tasks per Minute
+
+calculate the tasks per minute with the given configuration above:
+
+- Define Variables
+
+D: Number of DAGs = 10
+t: Tasks per DAG = 3
+W_d: Weight of the "@daily" schedule = 0.5
+W_h: Sum of weights for all hourly schedules = 0.6
+
+- Use the Equation
+
+```
+T = D * t * (W_d / 1440 + W_h / 60)
+T = 10 * 3 * (0.5 / 1440 + 0.6 / 60)
+T = 0.3 tasks per minute
+```
+
+
+## TODO
+
+- Add XCom task flow
+- Add Sensor task flow
+- Add Variables task flow

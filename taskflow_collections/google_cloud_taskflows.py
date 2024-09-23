@@ -94,7 +94,7 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
     cluster_name = "dpcluster-{self.dag_id}-{task_id}".replace("_", "-")
 
     create_cluster_{task_id} = DataprocCreateClusterOperator(
-        task_id=f"create_cluster_{task_id}",
+        task_id="create_cluster_{task_id}",
         project_id='{self.project_id}',
         cluster_config={{
             "master_config": {{
@@ -110,7 +110,7 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
         cluster_name=cluster_name,
     )
     task_{task_id} = DataprocSubmitJobOperator(
-        task_id=f"hive_task_{task_id}",
+        task_id="hive_task_{task_id}",
         job={{
             "reference": {{"project_id": '{self.project_id}'}},
             "placement": {{"cluster_name": cluster_name}},
@@ -120,7 +120,7 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
         project_id='{self.project_id}',
     )
     delete_cluster_{task_id} = DataprocDeleteClusterOperator(
-        task_id=f"delete_cluster_{task_id}",
+        task_id="delete_cluster_{task_id}",
         project_id='{self.project_id}',
         cluster_name=cluster_name,
         region='{self.region}',
@@ -238,7 +238,7 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
 
     source_bucket="cloud-samples-data",
     source_objects=["bigquery/us-states/us-states.csv"],
-    dataset_name = "your_dataset_{task_id}"
+    dataset_name = "{self.dag_id}_{task_id}"
     
     create_dataset_{task_id} = BigQueryCreateEmptyDatasetOperator(
         task_id="create_dataset_{task_id}",
@@ -248,9 +248,9 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
 
     task_{task_id} = GCSToBigQueryOperator(
         task_id="gcs_to_bigquery_{task_id}",
-        source_bucket=source_bucket,
-        source_objects=source_object,
-        destination_project_dataset_table="your_project.{{dataset_name}}.your_table",
+        bucket=source_bucket,
+        source_objects=source_objects,
+        destination_project_dataset_table=f"{self.project_id}.{{dataset_name}}.test",
         source_format="CSV",
     )
 

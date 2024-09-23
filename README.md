@@ -1,6 +1,6 @@
 # Composer Workload Simulator
 
-This project provides a framework for dynamically generating Apache Airflow DAGs to simulate workloads and test data pipelines on Google Cloud Platform (GCP). 
+This project provides a framework for dynamically generating Apache Airflow DAGs to simulate workloads and test data pipelines on Google Cloud Composer. 
 
 
 ## How To Use

@@ -214,7 +214,7 @@ with DAG(
 
 ## TaskFlow Collections
 
-This project utilizes custom TaskFlow collections to define a variety of tasks:
+This project utilizes custom TaskFlow collections (1 or more operators to simulate a use-case):
 
 * **`base_taskflows`:**  Provides reusable TaskFlows for common operations:
     *  `PythonOperator`: Executes a Python callable.

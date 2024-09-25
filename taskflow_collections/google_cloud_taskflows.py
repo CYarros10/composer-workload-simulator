@@ -1,22 +1,33 @@
 """
-Google Cloud Template class for default google task Taskflows.
+Google Cloud TaskFlow class for default google task Taskflows.
 """
 
 from taskflow_collections.base_taskflows import BaseTaskFlows
 
+
 class GoogleCloudTaskFlows(BaseTaskFlows):
     """
-    Base Template class with default functions for DAG generation.
+    Google Cloud TaskFlow class with default functions for DAG generation.
     """
 
     def __init__(self, dag_id, region, project_id):
         """
-        Google Cloud 
+        Google Cloud
         """
         super().__init__(dag_id)
         self.region = region
         self.project_id = project_id
-    
+
+        self.taskflows = [
+            "BigQueryInsertJobOperator",
+            "DataprocSubmitJobOperator",
+            "BeamRunJavaPipelineOperator",
+            "DataprocCreateBatchOperator",
+            "GCSToGCSOperator",
+            "GCSToBigQueryOperator",
+            "GKEStartPodOperator",
+        ]
+
     @staticmethod
     def add_imports():
         """generate string fo default imports"""
@@ -62,6 +73,34 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
 """
         return imports
 
+    def generate_tasks(self, task_number, taskflow_name) -> str:
+        """ """
+        tasks_string = ""
+        if taskflow_name == "BigQueryInsertJobOperator":
+            tasks_string = self.bigqueryinsertjoboperator_taskflow(task_id=task_number)
+
+        elif taskflow_name == "DataprocSubmitJobOperator":
+            tasks_string = self.dataprocsubmitjoboperator_taskflow(task_id=task_number)
+
+        elif taskflow_name == "BeamRunJavaPipelineOperator":
+            tasks_string = self.beamrunjavapipelineoperator_taskflow(
+                task_id=task_number
+            )
+
+        elif taskflow_name == "DataprocCreateBatchOperator":
+            tasks_string = self.dataprocbatchoperator_taskflow(task_id=task_number)
+
+        elif taskflow_name == "GCSToGCSOperator":
+            tasks_string = self.gcstogcsoperator_taskflow(task_id=task_number)
+
+        elif taskflow_name == "GCSToBigQueryOperator":
+            tasks_string = self.gcstobigqueryoperator_taskflow(task_id=task_number)
+
+        elif taskflow_name == "GKEStartPodOperator":
+            tasks_string = self.gkestartpodoperator_taskflow(task_id=task_number)
+
+        return tasks_string
+
     def bigqueryinsertjoboperator_taskflow(self, task_id: str):
         """Generates Taskflow for BigQueryInsertJobOperator."""
         return f"""
@@ -91,7 +130,7 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
     # Default DataprocSubmitJobOperator Taskflow 
     # -------------------------------------------------
 
-    cluster_name = "dpcluster-{self.dag_id}-{task_id}".replace("_", "-")
+    cluster_name = "{self.dag_id}-{task_id}".replace("_", "-")
 
     create_cluster_{task_id} = DataprocCreateClusterOperator(
         task_id="create_cluster_{task_id}",
@@ -136,7 +175,7 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
     # Default BeamRunJavaPipelineOperator Taskflow 
     # -------------------------------------------------
 
-    bucket = "{self.dag_id}-{task_id}-beam".replace('_','-')
+    bucket = "{self.dag_id}-{task_id}".replace('_','-')
     public_bucket = "airflow-system-tests-resources"
     jar_file_name = "word-count-beam-bundled-0.1.jar"
     gcs_output = f"gs://{{bucket}}"
@@ -202,7 +241,7 @@ from airflow.providers.google.cloud.operators.kubernetes_engine import (
     # -------------------------------------------------   
 
     source_bucket="cloud-samples-data",
-    destination_bucket = "{self.dag_id}-{task_id}-gcstogcs-dst".replace('_','-')
+    destination_bucket = "{self.dag_id}-{task_id}".replace('_','-')
 
     source_object = "bigquery/us-states/us-states.csv"
 

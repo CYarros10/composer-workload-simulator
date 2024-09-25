@@ -1,6 +1,6 @@
 experiment_id: experiment_4
-number_of_dags: 1800
-min_tasks_per_dag: 7
+number_of_dags: 1
+min_tasks_per_dag: 10
 
 # Schedules and weights
 schedules:
@@ -32,10 +32,12 @@ taskflows:
     BeamRunJavaPipelineOperator: 0
     GCSToGCSOperator: 0
     GKEStartPodOperator: 0
-    # sensor taskflows
 
 # Default settings for every generated DAG.
 default_settings:
+  project_id: cy-artifacts
+  region: us-central1
+  composer_environment: composer-3-load-testing
   deferrable: true
   retries: 1
   retry_delay: 2 # minutes
@@ -44,7 +46,5 @@ default_settings:
   dagrun_timeout: 60 # minutes
   execution_timeout: 30 # minutes
   sla: 25 # minutes
-  project_id: cy-artifacts
-  region: us-central1
   mode: poke
   poke_interval: 120 # seconds

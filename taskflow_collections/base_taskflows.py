@@ -13,7 +13,13 @@ class BaseTaskFlows:
         Initializes BaseTaskflow with DAG ID.
         """
         self.dag_id = dag_id
-
+        self.taskflows = [
+            "PythonOperator",
+            "KubernetesPodOperator",
+            "BashOperator",
+            "BranchPythonOperator",
+            "EmptyOperator",
+        ]
 
     @staticmethod
     def add_imports():
@@ -36,6 +42,29 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.empty import EmptyOperator
 """
 
+    def generate_tasks(self, task_number, taskflow_name) -> str:
+        """ """
+        tasks_string = ""
+
+        if taskflow_name == "PythonOperator":
+            tasks_string = self.pythonoperator_taskflow(task_id=task_number)
+
+        elif taskflow_name == "KubernetesPodOperator":
+            tasks_string = self.kubernetespodoperator_taskflow(task_id=task_number)
+
+        elif taskflow_name == "BashOperator":
+            tasks_string = self.bashoperator_taskflow(task_id=task_number)
+
+        elif taskflow_name == "BranchPythonOperator":
+            tasks_string += self.pythonbranchoperator_taskflow(
+                task_id=task_number,
+            )
+
+        elif taskflow_name == "EmptyOperator":
+            tasks_string = self.emptyoperator_taskflow(task_id=task_number)
+
+        return tasks_string
+
     def pythonoperator_taskflow(
         self,
         task_id: str,
@@ -47,7 +76,7 @@ from airflow.operators.empty import EmptyOperator
     # -------------------------------------------------
         
     task_{task_id} = PythonOperator(
-        task_id="hello_world_{task_id}",
+        task_id="python_{task_id}",
         python_callable=lambda: print(f"Hello World from DAG: {self.dag_id}, Task: {task_id}"),
     )
     """
@@ -127,5 +156,3 @@ from airflow.operators.empty import EmptyOperator
         task_id=f"empty_task_{task_id}",
     )
     """
-
-    

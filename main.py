@@ -1,14 +1,15 @@
 import random
-import yaml
 from pathlib import Path
 import getopt
 import sys
 
+from utils import helper_functions
 from taskflow_collections.base_taskflows import BaseTaskFlows
 from taskflow_collections.google_cloud_taskflows import GoogleCloudTaskFlows
+from taskflow_collections.custom_taskflows import CustomTaskFlows
 
 
-def create_dag_string(
+def generate_dag_string(
     experiment_id: str,
     dag_id: str,
     start_date: str,
@@ -23,7 +24,7 @@ def create_dag_string(
     dag_string = ""
 
     ################################################################################################
-    # Add Your Additional Task Flow Imports Below. 
+    # Add Your Additional Task Flow Imports Below.
     ################################################################################################
 
     for taskflow_collection in taskflow_collections:
@@ -31,6 +32,8 @@ def create_dag_string(
             dag_string += BaseTaskFlows.add_imports()
         elif taskflow_collection == "google_cloud":
             dag_string += GoogleCloudTaskFlows.add_imports()
+        elif taskflow_collection == "custom":
+            dag_string += CustomTaskFlows.add_imports()
 
     dag_string += f"""
 
@@ -53,13 +56,13 @@ with DAG(
     catchup={default_settings['catchup']},
     dagrun_timeout=timedelta(minutes={default_settings['dagrun_timeout']}),
     is_paused_upon_creation={default_settings['is_paused_upon_creation']},
-    tags=['load_simulation', '{experiment_id}']
+    tags=['generated_workload', '{experiment_id}']
 ) as dag:
 
 """
 
-    dag_string += generate_tasks(
-        taskflows=taskflows, # merge all taskflows into a single dictionary of taskflows and weights.
+    dag_string += generate_tasks_string(
+        taskflows=taskflows,  # merge all taskflows into a single dictionary of taskflows and weights.
         num_tasks=num_tasks,
         dag_id=dag_id,
         project_id=default_settings["project_id"],
@@ -75,79 +78,43 @@ with DAG(
     return dag_string
 
 
-def generate_tasks(
+def generate_tasks_string(
     taskflows: dict, dag_id: str, project_id: str, region: str, num_tasks: int
 ):
     """Generates task definitions for various taskflows and returns as a string."""
 
     base = BaseTaskFlows(dag_id=dag_id)
-    google_cloud = GoogleCloudTaskFlows(dag_id=dag_id, region=region, project_id=project_id)
+    google_cloud = GoogleCloudTaskFlows(
+        dag_id=dag_id, region=region, project_id=project_id
+    )
+    custom = CustomTaskFlows(dag_id=dag_id, region=region, project_id=project_id)
 
     tasks_string = ""
 
     for task_number in range(num_tasks):
-
         taskflow_name = random.choices(
             list(taskflows.keys()), weights=list(taskflows.values())
         )[0]
 
-        if taskflow_name == "PythonOperator":
-            tasks_string += base.pythonoperator_taskflow(task_id=task_number)
-
-        elif taskflow_name == "KubernetesPodOperator":
-            tasks_string += base.kubernetespodoperator_taskflow(task_id=task_number)
-
-        elif taskflow_name == "BashOperator":
-            tasks_string += base.bashoperator_taskflow(task_id=task_number)
-
-        elif taskflow_name == "BranchPythonOperator":
-            tasks_string += base.pythonbranchoperator_taskflow(task_id=task_number,)
-
-        elif taskflow_name == "EmptyOperator":
-            tasks_string += base.emptyoperator_taskflow(task_id=task_number)
-
-        elif taskflow_name == "BigQueryInsertJobOperator":
-            tasks_string += google_cloud.bigqueryinsertjoboperator_taskflow(task_id=task_number)
-
-        elif taskflow_name == "DataprocSubmitJobOperator":
-            tasks_string += google_cloud.dataprocsubmitjoboperator_taskflow(task_id=task_number)
-
-        elif taskflow_name == "BeamRunJavaPipelineOperator":
-            tasks_string += google_cloud.beamrunjavapipelineoperator_taskflow(task_id=task_number)
-
-        elif taskflow_name == "DataprocCreateBatchOperator":
-            tasks_string += google_cloud.dataprocbatchoperator_taskflow(task_id=task_number)
-
-        elif taskflow_name == "GCSToGCSOperator":
-            tasks_string += google_cloud.gcstogcsoperator_taskflow(task_id=task_number)
-
-        elif taskflow_name == "GCSToBigQueryOperator":
-            tasks_string += google_cloud.gcstobigqueryoperator_taskflow(task_id=task_number)
-
-        elif taskflow_name == "GKEStartPodOperator":
-            tasks_string += google_cloud.gkestartpodoperator_taskflow(task_id=task_number)
-
-        ############################################################################################
-        # Add Your Additional Task Flows Below. 
-        ############################################################################################
-
+        if taskflow_name in base.taskflows:
+            tasks_string += base.generate_tasks(
+                task_number=task_number,
+                taskflow_name=taskflow_name,
+            )
+        elif taskflow_name in google_cloud.taskflows:
+            tasks_string += google_cloud.generate_tasks(
+                task_number=task_number,
+                taskflow_name=taskflow_name,
+            )
+        elif taskflow_name in custom.taskflows:
+            tasks_string += custom.generate_tasks(
+                task_number=task_number,
+                taskflow_name=taskflow_name,
+            )
         else:
-            raise ValueError(f"Unsupported operator: {taskflow_name}")
+            raise ValueError(f"Unsupported task flow: {taskflow_name}")
 
     return tasks_string
-
-
-def load_config_from_file(filepath):
-    """
-    Load YAML file into dictionary.
-    """
-    load_config = {}
-    try:
-        with open(filepath, "r") as f:
-            load_config = yaml.safe_load(f)
-    except FileNotFoundError:
-        print("Error: config.yaml not found.")
-    return load_config
 
 
 def main(argv):
@@ -157,27 +124,36 @@ def main(argv):
 
     config_file = ""
     output_dir = ""
+    upload = False
 
     try:
-        opts, args = getopt.getopt(argv, "ho:v", ["help", "config-file=", "output-dir="])
+        opts, args = getopt.getopt(
+            argv, "ho:v", ["help", "config-file=", "output-dir=", "upload-to-composer"]
+        )
     except getopt.GetoptError:
-        print('main.py -c <configfile>')
+        print(
+            "main.py -config-file=<configfile> --output-dir=<outputdir> --upload-to-composer"
+        )
         sys.exit(2)
     for opt, arg in opts:
-        if opt == '-h':
-            print('main.py -c <configfile>')
+        if opt == "-h":
+            print(
+                "main.py -config-file=<configfile> --output-dir=<outputdir> --upload-to-composer"
+            )
             sys.exit()
-        elif opt in ("-c", "--config-file"):
+        elif opt in ("--config-file"):
             config_file = arg
-            print('-- Using config file:', config_file)
-        elif opt in ("-o", "--output-dir"):
+            print("-- Using config file:", config_file)
+        elif opt in ("--output-dir"):
             output_dir = arg
-            print('-- Generating output in:', output_dir)
-
+            print("-- Generating output in:", output_dir)
+        elif opt in ("--upload-to-composer"):
+            upload = True
+            print("-- Uploading generated dags to Composer environment.")
 
     # Load configuration (assuming you have a function to load it)
-    load_config = load_config_from_file(
-       config_file
+    load_config = helper_functions.load_config_from_file(
+        config_file
     )  # Replace with your loading logic
     num_dags = load_config["number_of_dags"]
     min_tasks_per_dag = load_config["min_tasks_per_dag"]
@@ -189,12 +165,11 @@ def main(argv):
         taskflow_collections.append(key)
         nested_dict = load_config["taskflows"][key]
         taskflows.update(nested_dict)
-    
 
     # Generate DAGs
     for i in range(num_dags):
         experiment_id = load_config["experiment_id"]
-        dag_id = f"{experiment_id}_dag_{i}".replace('-','_')
+        dag_id = f"{experiment_id}_dag_{i}".replace("-", "_")
         schedule = random.choices(
             list(load_config["schedules"].keys()),
             weights=list(load_config["schedules"].values()),
@@ -206,8 +181,7 @@ def main(argv):
         default_settings = load_config["default_settings"].copy()
         default_settings["owner"] = "airflow"
 
-
-        dag = create_dag_string(
+        dag = generate_dag_string(
             experiment_id=experiment_id,
             dag_id=dag_id,
             start_date=start_date,
@@ -220,13 +194,32 @@ def main(argv):
 
         if not output_dir:
             output_dir = "dags/"
-        
+
         Path(f"{output_dir}/{experiment_id}").mkdir(parents=True, exist_ok=True)
         with open(f"{output_dir}/{experiment_id}/dag_{i}.py", "w") as file:
             file.write(dag)
 
-    print(f"-- Generated {num_dags} dags with at least {min_tasks_per_dag} tasks per dag.")
-    print(f"-- Check dags/{experiment_id} directory for generated output.")
+
+    # Upload DAGS to Composer Environment if specified.
+    if upload:
+        dag_folder = helper_functions.get_composer_environment_bucket(
+            default_settings["project_id"],
+            default_settings["region"],
+            default_settings["composer_environment"],
+        )
+        helper_functions.upload_directory(
+            source_folder=f"{output_dir}/{experiment_id}/",
+            target_gcs_path=f"{dag_folder}/{experiment_id}",
+        )
+
+    print(
+        f"> Generated {num_dags} dags with at least {min_tasks_per_dag} tasks per dag"
+    )
+    print(f"> Check dags/{experiment_id} directory for generated output")
+    if upload:
+        print(
+            f"> Uploaded dags/{experiment_id} contents to {dag_folder}/{experiment_id}"
+        )
 
 
 if __name__ == "__main__":
